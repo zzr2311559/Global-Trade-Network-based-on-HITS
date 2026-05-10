@@ -136,7 +136,6 @@ def main():
         prefix = "vanilla"
         
     file_name = f"{prefix}_hits_scores_{args.scope}_{args.year}.csv"
-    # =======================================================================
     
     save_path = os.path.join(result_dir, file_name)
     

@@ -31,7 +31,7 @@ class GeobiasedHITS(hits_algorithm):
                     
                     if u_name in coords_dict and v_name in coords_dict:
                         dist = calculate_trade_distance(coords_dict[u_name], coords_dict[v_name])
-                        penalty = (dist + 1) ** gamma
+                        penalty = (dist/1000 + 1) ** gamma
                         biased_matrix[i, j] = biased_matrix[i, j] / penalty
                     else:
                         print(f"找不到坐标，跳过匹配: {u_name} 或 {v_name}") # 加这一行
