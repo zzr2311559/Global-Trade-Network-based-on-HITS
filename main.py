@@ -119,7 +119,7 @@ def main():
         print(f"Error: cannot find {csv_path}")
         return
 
-    print(f"Task: Scope=[{args.scope}], Year=[{args.year}], Geo-biased=[{args.Geo}]")
+    print(f"Task: Scope=[{args.scope}], Year=[{args.year}], Geo-biased=[{args.Geo}], Gamma=[{args.gamma}]")
     runner = FaostatRunner(data_path=csv_path, year=args.year)
     final_scores = runner.run_hits(use_geo_bias=args.Geo, gamma=args.gamma)
     
@@ -130,8 +130,14 @@ def main():
     if not os.path.exists(result_dir):
         os.makedirs(result_dir)
     
-    prefix = "geobiased" if args.Geo else "vanilla"
+    if args.Geo:
+        prefix = f"geobiased_gamma_{args.gamma}"
+    else:
+        prefix = "vanilla"
+        
     file_name = f"{prefix}_hits_scores_{args.scope}_{args.year}.csv"
+    # =======================================================================
+    
     save_path = os.path.join(result_dir, file_name)
     
     final_scores.to_csv(save_path, index=False)
@@ -144,5 +150,6 @@ if __name__ == "__main__":
     2. python main.py --Geo
     3. python main.py --scope global
     4. python main.py --scope global --Geo --year 2020
+    5. python main.py --scope global --Geo --gamma
     """
     main()
