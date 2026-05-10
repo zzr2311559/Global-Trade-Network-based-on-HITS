@@ -2,6 +2,8 @@ import os
 import pandas as pd
 import numpy as np
 from algo.HITS import hits_algorithm
+from algo.Geobiasd_HITS import GeobiasedHITS
+import argparse
 
 def build_trade_network(data_path, target_year=2021):
     
@@ -48,10 +50,22 @@ class FaostatRunner:
         edge_list = build_trade_network(data_path, target_year=year)
         self.adj_matrix, self.node_names = edges_to_matrix(edge_list)
         
-    def run_hits(self):
-
-        hits_model = hits_algorithm(self.adj_matrix, max_iter=1000, tol=1e-8)
+    def run_hits(self, use_geo_bias=True, gamma=1.0):
+        print(f"\n=== running {'Geo-biased' if use_geo_bias else 'vanilla'} HITS  ===")
         
+        if use_geo_bias:
+            coords_df = pd.read_csv("./data/countries_coords.csv")
+            coords_dict = {row['name']: (row['latitude'], row['longitude']) for _, row in coords_df.iterrows()}
+            
+            hits_model = GeobiasedHITS(
+                self.adj_matrix, 
+                coords_dict, 
+                self.node_names, 
+                gamma=gamma
+            )
+        else:
+            hits_model = hits_algorithm(self.adj_matrix)
+            
         authority_scores, hub_scores = hits_model.run()
         
         results = []
@@ -66,13 +80,17 @@ class FaostatRunner:
         return df_results
 
 
+def main():
 
-if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--Geo', action='store_true', help="Geo-biased HITS")
+
+    args = parser.parse_args()
 
     csv_path = "./data/TradeMatrix__Europe/Trade_DetailedTradeMatrix_E_Europe_NOFLAG.csv"
     
     runner = FaostatRunner(data_path=csv_path, year=2021)
-    final_scores = runner.run_hits()
+    final_scores = runner.run_hits(use_geo_bias = True if args.Geo else False)
     
     print("\nTop 5 Hubs:")
     print(final_scores.sort_values(by='Hub Score (出)', ascending=False).head(5).to_string(index=False))
@@ -81,9 +99,20 @@ if __name__ == "__main__":
     
     if not os.path.exists(result_dir):
         os.makedirs(result_dir)
-        
-    save_path = os.path.join(result_dir, "hits_scores_2021.csv")
+    
+    if args.Geo:
+        save_path = os.path.join(result_dir, "geobiased_hits_scores_2021.csv")
+    else:
+        save_path = os.path.join(result_dir, "vanilla_hits_scores_2021.csv")
+
     
     final_scores.to_csv(save_path, index=False)
     
     print(f"\nResult saved as '{save_path}'")
+    
+
+if __name__ == "__main__":
+    """
+    Usage: Run 'python main.py --Geo' to use geobiased HITS.
+    """
+    main()

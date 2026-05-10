@@ -44,13 +44,6 @@ if __name__ == "__main__":
         [0, 0, 1, 0]
     ])
 
-    B = np.array([
-        [0.1, 0.2, 0.5, 0.6],
-        [0.6, 0.3, 0.6, 0.1],
-        [],
-        []
-    ])
-
     hits_A = hits_algorithm(A)
     a, h = hits_A.run()
     
