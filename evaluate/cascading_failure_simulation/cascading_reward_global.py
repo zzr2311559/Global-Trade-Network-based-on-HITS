@@ -10,8 +10,8 @@ TRADE_DATA_PATH = os.path.join(BASE_DIR, "data", "TradeMatrix_Global", "Trade_De
 if not os.path.exists(TRADE_DATA_PATH):
     TRADE_DATA_PATH = os.path.join(BASE_DIR, "data", "TradeMatrix_Global", "Trade_DetailedTradeMatrix_E_All_Data.csv")
 
-# 修复1：输出图片带上 log10
-OUTPUT_IMG_PATH = os.path.join(os.path.dirname(__file__), "cascading_failure_log10_global.png")
+# 输出名字带上 reward_lg
+OUTPUT_IMG_PATH = os.path.join(os.path.dirname(__file__), "cascading_failure_reward_lg_global.png")
 
 YEAR = 2021
 MAX_ATTACK_NODES = 30  
@@ -41,23 +41,23 @@ def get_attack_sequences(G):
     out_degrees = {n: sum(d['weight'] for _, _, d in G.out_edges(n, data=True)) for n in G.nodes()}
     sequences['Real Export (Degree)'] = sorted(out_degrees, key=out_degrees.get, reverse=True)
     
-    # 修复2：强制读取 log10_vanilla 文件
+    # 读取 reward_lg 的 vanilla
     try:
-        vanilla_df = pd.read_csv(os.path.join(RESULT_DIR, "log10_vanilla_hits_scores_global_2021.csv"))
+        vanilla_df = pd.read_csv(os.path.join(RESULT_DIR, "reward_lg_vanilla_hits_scores_global_2021.csv"))
         vanilla_nodes = vanilla_df.sort_values(by='Hub Score (出)', ascending=False)['Country'].tolist()
         sequences['Vanilla HITS'] = [n for n in vanilla_nodes if n in G]
     except Exception as e:
         print(f"Error reading Vanilla HITS: {e}")
 
-    # 修复3：强制读取 log10_geobiased 文件
+    # 读取 reward_lg 的 geobiased
     for gamma in GAMMAS:
         try:
-            geo_file = f"log10_geobiased_gamma_{gamma:.1f}_hits_scores_global_2021.csv"
+            geo_file = f"reward_lg_geobiased_gamma_{gamma:.1f}_hits_scores_global_2021.csv"
             geo_df = pd.read_csv(os.path.join(RESULT_DIR, geo_file))
             geo_nodes = geo_df.sort_values(by='Hub Score (出)', ascending=False)['Country'].tolist()
-            sequences[f'Geo-biased (γ={gamma:.1f})'] = [n for n in geo_nodes if n in G]
+            sequences[f'Reward Geo (γ={gamma:.1f})'] = [n for n in geo_nodes if n in G]
         except Exception as e:
-            print(f"Error reading Geo-biased gamma {gamma}: {e}")
+            print(f"Error reading Reward Geo-biased gamma {gamma}: {e}")
             
     return sequences
 
@@ -106,11 +106,11 @@ def plot_simulation(all_results):
     colors = {'Real Export (Degree)': '#7f8c8d', 'Vanilla HITS': '#e74c3c'}
     markers = {'Real Export (Degree)': 'o', 'Vanilla HITS': 's'}
     
-    geo_colors = ['#85c1e9', '#3498db', '#2980b9', '#2471a3', '#8e44ad']
+    geo_colors = ['#1abc9c', '#2ecc71', '#27ae60', '#16a085', '#0e6655']
     geo_markers = ['v', '^', '<', '>', 'D']  
     
     for i, gamma in enumerate(GAMMAS):
-        name = f'Geo-biased (γ={gamma:.1f})'
+        name = f'Reward Geo (γ={gamma:.1f})'
         colors[name] = geo_colors[i]
         markers[name] = geo_markers[i]
 
@@ -124,17 +124,17 @@ def plot_simulation(all_results):
                      linewidth=2.5 if 'Vanilla' in name or 'γ=1.0' in name else 1.5,
                      markersize=7)
 
-    axes[0].set_title('Log10 Model: Volume Retained', fontsize=14)
+    axes[0].set_title('Reward Model: Volume Retained', fontsize=14)
     axes[0].set_xlabel('Number of Hubs Removed', fontsize=12)
     axes[0].set_ylabel('Remaining Trade Volume (Ratio)', fontsize=12)
     axes[0].legend(fontsize=10)
 
-    axes[1].set_title('Log10 Model: LCC Size (Fragmentation)', fontsize=14)
+    axes[1].set_title('Reward Model: LCC Size (Fragmentation)', fontsize=14)
     axes[1].set_xlabel('Number of Hubs Removed', fontsize=12)
     axes[1].set_ylabel('Largest Connected Component (Ratio)', fontsize=12)
     axes[1].legend(fontsize=10)
 
-    plt.suptitle('Global Network Robustness (Log10 Model)', fontsize=16, y=1.02, fontweight='bold')
+    plt.suptitle('Global Network Robustness (Reward Distance Model)', fontsize=16, y=1.02, fontweight='bold')
     plt.tight_layout()
     plt.savefig(OUTPUT_IMG_PATH, bbox_inches='tight', dpi=300)
     print(f"\n[Success] Image saved to: {OUTPUT_IMG_PATH}")

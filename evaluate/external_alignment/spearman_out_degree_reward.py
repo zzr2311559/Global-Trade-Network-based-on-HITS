@@ -9,13 +9,11 @@ import seaborn as sns
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 RESULT_DIR = os.path.join(BASE_DIR, "result")
 
-# 修复1：改成了全球数据路径，与你的生成结果匹配
 TRADE_DATA_PATH = os.path.join(BASE_DIR, "data", "TradeMatrix_Global", "Trade_DetailedTradeMatrix_E_All_Data_NOFLAG.csv")
 if not os.path.exists(TRADE_DATA_PATH):
     TRADE_DATA_PATH = os.path.join(BASE_DIR, "data", "TradeMatrix_Global", "Trade_DetailedTradeMatrix_E_All_Data.csv")
 
-# 修复2：输出图片名字带上 log10
-OUTPUT_IMG_PATH = os.path.join(os.path.dirname(__file__), "spearman_out_degree_log10_trend.png")
+OUTPUT_IMG_PATH = os.path.join(os.path.dirname(__file__), "spearman_out_degree_reward_lg_trend.png")
 
 def calculate_real_out_degree(year=2021):
     print(f"Loading global data for {year} to calculate real out-degree...")
@@ -37,8 +35,8 @@ def run_evaluation():
         print(f"Error calculating out-degree: {e}")
         return
 
-    # 修复3：扫描 log10 开头的文件（包括 vanilla 和 geobiased）
-    result_files = [f for f in os.listdir(RESULT_DIR) if f.endswith('.csv') and 'log10_' in f]
+    # 扫描之前生成的 reward_lg 开头的文件
+    result_files = [f for f in os.listdir(RESULT_DIR) if f.endswith('.csv') and 'reward_lg_' in f]
     
     eval_results = []
     for file in result_files:
@@ -51,7 +49,7 @@ def run_evaluation():
         else:
             match = re.search(r'gamma_([0-9.]+)', file)
             gamma = float(match.group(1)) if match else None
-            model_type = 'Geo-biased HITS'
+            model_type = 'Reward Geo-biased'
             
         if gamma is None: continue
             
@@ -65,7 +63,7 @@ def run_evaluation():
         })
 
     results_df = pd.DataFrame(eval_results).sort_values(by='Gamma')
-    print("\n[Result] Hub Score vs Real Out-degree:")
+    print("\n[Result] Hub Score vs Real Out-degree (Reward Logic):")
     print(results_df.to_string(index=False))
 
     plot_results(results_df)
@@ -74,17 +72,17 @@ def plot_results(results_df):
     plt.style.use('seaborn-v0_8-whitegrid')
     plt.figure(figsize=(10, 6))
     
-    geo_df = results_df[results_df['Model'] == 'Geo-biased HITS']
-    sns.lineplot(data=geo_df, x='Gamma', y='Spearman_Coef', marker='s', 
-                 linewidth=2.5, markersize=9, color='#8e44ad', label='Geo-biased HITS')
+    geo_df = results_df[results_df['Model'] == 'Reward Geo-biased']
+    sns.lineplot(data=geo_df, x='Gamma', y='Spearman_Coef', marker='D', 
+                 linewidth=2.5, markersize=9, color='#27ae60', label='Reward Geo-biased')
     
     vanilla_row = results_df[results_df['Model'] == 'Vanilla HITS']
     if not vanilla_row.empty:
         vanilla_coef = vanilla_row.iloc[0]['Spearman_Coef']
         plt.axhline(y=vanilla_coef, color='#c0392b', linestyle='--', linewidth=2, label='Vanilla HITS (Baseline)')
 
-    plt.title(r'Log10 Model: Decoupling Hub Score from Raw Export Volume', fontsize=15, pad=15)
-    plt.xlabel(r'Distance Penalty Parameter ($\gamma$)', fontsize=12)
+    plt.title(r'Reward Model: Hub Score vs. Raw Export Volume', fontsize=15, pad=15)
+    plt.xlabel(r'Distance Reward Parameter ($\gamma$)', fontsize=12)
     plt.ylabel('Spearman Correlation (with Total Export)', fontsize=12)
     plt.legend()
     plt.tight_layout()
